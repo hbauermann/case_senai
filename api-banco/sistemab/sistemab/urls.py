@@ -25,7 +25,7 @@ from saveresults.viewsets import LogoutView
 route = routers.DefaultRouter()
 
 
-route.register(r'detection', sareresultsviewsets.Detection,
+route.register(r'api/monitoring', sareresultsviewsets.Detection,
                basename='detection')
 
 urlpatterns = [
