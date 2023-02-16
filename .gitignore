@@ -1,3 +1,4 @@
 .case-senai
 runs
 train-yolov8
+yolov8n.pt
