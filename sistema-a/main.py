@@ -45,7 +45,8 @@ def renew_token(url, refresh_token):
 
 
 def convert_to_b64(img_to_convert):
-    base64_image = base64.b64encode(cv2.imencode('.png', img_to_convert)[1]).decode()
+    base64_image = base64.b64encode(
+        cv2.imencode('.png', img_to_convert)[1]).decode()
     return base64_image
 
 
@@ -80,49 +81,47 @@ def cut_detection(list_of_results, image_to_cut):
     return image
 
 
+if __name__ == "__main__":
+    image_souce_cv2 = cv2.imread('testes_imagens\\3.png')
+    #model = YOLO("runs\\detect\\yolov8n_custom9\\weights\\best.pt") #modelo do treinamento (não ficou bom).
+    model = YOLO('yolov8n.pt')
 
-image_souce_cv2 = cv2.imread('testes_imagens\\3.png')
-#model = YOLO("runs\\detect\\yolov8n_custom9\\weights\\best.pt")
-model = YOLO('yolov8n.pt')
+    date_oc = str(datetime.now())
+    mac_oc = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
+                       for ele in range(0, 8*6, 8)][::-1]).upper()
+    class_oc = 'MOUSE'
+    url_detection_db = 'http://localhost:8000/detection/'
+    login_url = 'http://localhost:8000/api/autentication/login'
+    renew_url = 'http://localhost:8000/api/autentication/renovate'
 
-date_oc = str(datetime.now())  
-mac_oc = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
-                  for ele in range(0, 8*6, 8)][::-1]).upper()
+    username = 'admin' 
+    password = 'Senai@2023' #pode ser colocada como variável de ambiente
 
-evidence_oc = ''
-class_oc = 'MOUSE'
-url = 'http://localhost:8000/detection/'
-login_url = 'http://localhost:8000/api/autentication/login'
-renew_url = 'http://localhost:8000/api/autentication/renovate'
+    positive_detection = yolov8_mouse_detect(image_souce_cv2, model)
+    if len(positive_detection) != 0:
+        imagem_detectada = cut_detection(positive_detection, image_souce_cv2)
+        imagem_detectada_b64 = convert_to_b64(imagem_detectada)
+        token = login_api(login_url, username, password)
+        access_token = token['access']
+        #refresh_token = token['refresh']
+        send_to_db_data = send_to_db(
+            url_detection_db, mac_oc, class_oc, imagem_detectada_b64, access_token)
+        print(send_to_db_data)
 
-username = 'admin'
-password = 'Senai@2023'
-
-#token = login_api(login_url, username, password)
-#access_token = token['access']
-#refresh_token = token['refresh']
-positive_detection = yolov8_mouse_detect(image_souce_cv2, model)
-print(positive_detection)
-teste1 = cut_detection(positive_detection, image_souce_cv2)
-cv2.imwrite('teste1.png', teste1)
-
-
-
-
-"""
-Para detectar via webcam - EM TESTES
-vid = cv2.VideoCapture(0)
-while(True):
-    ret, frame = vid.read()
-    cv2.imshow('frame', frame)
-    detection = yolov8_mouse_detect(frame, model)
-    print(detection)
-    if len(detection) != 0:
-        positive_det = cut_detection(yolov8_mouse_detect(image_souce_cv2, model), image_souce_cv2)
-        cv2.imwrite('positive_det.png', positive_det)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-  
-vid.release()
-cv2.destroyAllWindows()
-""" 
+    """
+    Para detectar via webcam - EM TESTES
+    vid = cv2.VideoCapture(0)
+    while(True):
+        ret, frame = vid.read()
+        cv2.imshow('frame', frame)
+        detection = yolov8_mouse_detect(frame, model)
+        print(detection)
+        if len(detection) != 0:
+            positive_det = cut_detection(yolov8_mouse_detect(image_souce_cv2, model), image_souce_cv2)
+            cv2.imwrite('positive_det.png', positive_det)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    vid.release()
+    cv2.destroyAllWindows()
+    """
